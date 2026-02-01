@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeyTyper PC Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 20px;
+        }
+
+        .phone-frame {
+            width: 100%; max-width: 1000px; height: 580px;
+            background: white; border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px; display: flex; flex-direction: column;
+            position: relative; transition: background 0.8s ease; overflow: hidden;
+        }
+
+        .phone-frame.game-starting { background: #b0b0b0; }
+        .phone-frame.game-starting .menu-content { opacity: 0; transition: opacity 0.8s ease; }
+        .phone-frame.game-active { background: white; transition: background 0.3s ease; }
+
+        .menu-content {
+            height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 1; transition: opacity 0.3s ease;
+        }
+        .menu-content.hidden { display: none; }
+
+        .logo-text { font-size: 72px; font-weight: 800; letter-spacing: -2px; margin-bottom: 20px; }
+        .logo-key { color: #97e05f; }
+        .logo-typer { color: #c8c8c8; }
+        .logo-typer-r { color: #97e05f; }
+
+        .play-button {
+            width: 400px; height: 80px; background: #97e05f;
+            border: none; border-radius: 20px; color: white;
+            font-size: 42px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 10px 0 #6fa647; transition: transform 0.1s;
+        }
+        .play-button:active { transform: translateY(6px); box-shadow: 0 4px 0 #6fa647; }
+
+        .game-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 40px; opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+        }
+        .game-screen.active { opacity: 1; pointer-events: auto; }
+
+        .timer { font-size: 48px; color: #97e05f; margin-bottom: 30px; font-weight: 700; }
+        .timer.warning { color: #ffce79; }
+        .timer.danger { color: #f77373; }
+
+        .sentence-display {
+            font-size: 24px; color: #c7c7c7; text-align: center;
+            line-height: 1.4; margin-bottom: 20px; max-width: 850px;
+            min-height: 100px;
+        }
+        .sentence-display span.correct { color: #97e05f; }
+        .sentence-display span.current { border-bottom: 4px solid #808080; }
+        .sentence-display span.error { color: #ff4444; border-bottom: 4px solid #ff4444; }
+
+        .type-prompt { 
+            color: #888; font-size: 24px; margin-bottom: 20px; 
+            font-weight: 800; transition: opacity 0.3s;
+        }
+        .type-prompt.hidden { opacity: 0; }
+
+        .keyboard {
+            width: 100%; max-width: 800px; background: #eeeeee;
+            border-radius: 20px; padding: 20px; position: absolute; bottom: 20px;
+        }
+        .keyboard-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
+        .key {
+            background: #f4d75e; border: none; border-radius: 8px;
+            width: 50px; height: 50px; display: flex; align-items: center;
+            justify-content: center; font-size: 18px; font-weight: 600;
+            color: white; box-shadow: 0 4px 0 #d4b74e; transition: all 0.05s;
+        }
+        .key.pressed { transform: translateY(4px); box-shadow: 0 0px 0 #d4b74e; background: #e5c64d; }
+        .spacebar { width: 300px; }
+        .special-key { background: #b89bdb; box-shadow: 0 4px 0 #9878bb; width: 60px; }
+        .enter-key { background: #97e05f; box-shadow: 0 4px 0 #77c03f; width: 60px; }
+
+        .win-screen, .lose-screen, .shop-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; z-index: 100; border-radius: 30px;
+        }
+        .win-screen.active, .lose-screen.active, .shop-screen.active { opacity: 1; pointer-events: auto; }
+        .result-score { font-size: 80px; color: #97e05f; font-weight: 700; }
+        .formula-display { font-size: 36px; color: #97e05f; margin-bottom: 20px; }
+
+        .shop-header {
+            position: absolute; top: 30px; left: 40px; right: 40px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .shop-title { font-size: 48px; font-weight: 800; color: #9878bb; }
+        .currency-display {
+            font-size: 32px; font-weight: 700; color: #ffb300; 
+            background: #fff9e6; padding: 10px 20px; border-radius: 15px;
+            border: 3px solid #ffcc00;
+        }
+        .shop-content {
+            width: 100%; max-width: 800px; height: 320px;
+            margin-top: 60px; overflow-y: auto; padding: 20px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+        }
+        .shop-item {
+            background: #f9f9f9; border: 2px solid #9878bb; border-radius: 15px;
+            padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+        }
+        .buy-btn {
+            background: #97e05f; border: none; color: white; padding: 8px 15px;
+            border-radius: 10px; font-weight: 700; cursor: pointer;
+        }
+        .buy-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .buy-btn.owned { background: #b89bdb; }
+
+        .shop-next-btn {
+            position: absolute !important; bottom: 30px !important; right: 40px !important;
+            width: 100px !important; height: 45px !important; font-size: 18px !important;
+            box-shadow: none !important; border-radius: 10px !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame" id="phoneFrame">
+        <div class="menu-content" id="menuContent">
+            <div class="logo">
+                <div class="logo-text">
+                    <span class="logo-key">Key</span><span class="logo-typer">Type</span><span class="logo-typer-r">r</span>
+                </div>
+            </div>
+            <div class="bottom-section">
+                <div class="highest-point" id="menuHighScoreDisplay" style="margin-bottom: 10px; color: #888;">Highest Point: 0</div>
+                <button class="play-button" id="playButton">PLAY</button>
+            </div>
+        </div>
+
+        <div class="game-screen" id="gameScreen">
+            <div id="doubleIndicator" style="color: #ffb300; font-weight: 800; font-size: 14px; margin-bottom: 5px; visibility: hidden;">DOUBLE POINTS ACTIVE!</div>
+            <div class="timer" id="timer">30.00</div>
+            <div class="sentence-display" id="sentence"></div>
+            <div class="type-prompt">Type to start</div>
+            <div class="keyboard" id="mainKeyboard">
+                <div class="keyboard-row">
+                    <button class="key">Q</button><button class="key">W</button><button class="key">E</button><button class="key">R</button><button class="key">T</button>
+                    <button class="key">Y</button><button class="key">U</button><button class="key">I</button><button class="key">O</button><button class="key">P</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key">A</button><button class="key">S</button><button class="key">D</button><button class="key">F</button><button class="key">G</button>
+                    <button class="key">H</button><button class="key">J</button><button class="key">K</button><button class="key">L</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key">Z</button><button class="key">X</button><button class="key">C</button><button class="key">V</button><button class="key">B</button>
+                    <button class="key">N</button><button class="key">M</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key special-key" data-key="Shift">⇧</button>
+                    <button class="key spacebar" data-key=" ">spacebar</button>
+                    <button class="key special-key" data-key="Backspace">⌫</button>
+                    <button class="key enter-key" data-key="Enter">▶</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="win-screen" id="winScreen">
+            <div class="formula-display" id="formulaDisplay"></div>
+            <div class="result-score" id="resultScore">0</div>
+            <button class="play-button" id="nextButton" style="width:250px; margin-top:20px;">Next</button>
+            <div class="wpm-text" id="winWpmDisplay" style="margin-top:10px;">0 WPM</div>
+        </div>
+
+        <div class="shop-screen" id="shopScreen">
+            <div class="shop-header">
+                <div class="shop-title">SHOP</div>
+                <div class="currency-display" id="shopPoints">Pts: 0</div>
+            </div>
+            <div class="shop-content">
+                <div class="shop-item">
+                    <div style="font-weight:800; color:#9878bb;">1 for 1</div>
+                    <div style="font-size:12px; color:#666;">+2 Hard words/lvl. +2.5s starting time/lvl. (Max 5)</div>
+                    <div style="font-weight:700; color:#ffb300;">750 Pts</div>
+                    <button class="buy-btn" id="buy1for1">Buy (0/5)</button>
+                </div>
+                <div class="shop-item">
+                    <div style="font-weight:800; color:#9878bb;">Double or Nothing</div>
+                    <div style="font-size:12px; color:#666;">The next sentence gives 2x points!</div>
+                    <div style="font-weight:700; color:#ffb300;">500 Pts</div>
+                    <button class="buy-btn" id="buyDouble">Buy</button>
+                </div>
+                <div class="shop-item" style="border: 2px dashed #ccc; background: none; justify-content: center; color:#ccc;">Coming Soon</div>
+            </div>
+            <button class="play-button shop-next-btn" id="shopNextButton">Next</button>
+        </div>
+
+        <div class="lose-screen" id="loseScreen">
+            <div style="font-size:72px; color:#f77373; font-weight:800;">LOSE</div>
+            <div id="finalScoreValue" style="font-size:56px; color:#97e05f;">0</div>
+        </div>
+    </div>
+
+    <script>
+        const easyWords = ['the', 'cat', 'dog', 'sun', 'run', 'big', 'red', 'blue', 'map', 'hat', 'cup', 'sky', 'box', 'pen', 'fox', 'toy', 'ice', 'fire', 'hot', 'cold', 'wet', 'dry', 'old', 'new', 'fast', 'slow', 'up', 'down', 'left', 'book', 'tree', 'bird', 'fish', 'milk', 'cake', 'jump', 'sing', 'walk', 'duck', 'rain', 'snow', 'wind', 'star', 'moon', 'ship', 'car', 'bus', 'road', 'hill', 'leaf'];
+        const normalWords = ['bright', 'slowly', 'above', 'ocean', 'jumps', 'quick', 'brown', 'happy', 'garden', 'gentle', 'breeze', 'through', 'morning', 'spring', 'season', 'purple', 'clouds', 'around', 'simple', 'friend', 'school', 'yellow', 'window', 'orange', 'planet', 'rocket', 'castle', 'dragon', 'knight', 'forest', 'bridge', 'island', 'summer', 'winter', 'autumn', 'coffee', 'player', 'camera', 'guitar', 'laptop', 'system', 'button', 'market', 'silver', 'bottle', 'pencil', 'active', 'silent', 'energy', 'nature', 'animal', 'desert', 'palace', 'speech', 'valley', 'stream', 'shadow', 'mirror', 'wonder', 'spirit', 'expert', 'action', 'flavor', 'impact', 'global', 'travel', 'motion', 'theory', 'future', 'modern', 'square', 'circle', 'danger', 'secure', 'health', 'wealth', 'honest', 'memory', 'choice', 'public', 'native', 'flight', 'ground', 'target', 'source', 'middle', 'object', 'strong', 'weight', 'unique', 'visual', 'report', 'design', 'update', 'search', 'create', 'launch', 'delete', 'select', 'finish', 'escape', 'screen', 'format', 'layout', 'header', 'footer', 'border', 'margin', 'column', 'random', 'number', 'string', 'script', 'method', 'event', 'result', 'status', 'canvas', 'local', 'enemy', 'score', 'level', 'bonus', 'power', 'speed', 'climb', 'attack', 'defend', 'magic', 'shield', 'sword', 'stone', 'water', 'flame', 'earth', 'light', 'dark', 'sound', 'music', 'voice', 'image', 'video', 'total', 'point'];
+        const hardWords = ['moonlight', 'children', 'beautiful', 'everything', 'different', 'important', 'experience', 'technology', 'adventure', 'discovery', 'knowledge', 'celebrate', 'understand', 'challenge', 'impossible', 'happiness', 'structure', 'signature', 'community', 'determine', 'scientist', 'influence', 'passenger', 'necessary', 'effective', 'transform', 'excellent', 'character', 'introduce', 'immediate', 'situation', 'frequency', 'operation', 'highlight', 'recommend', 'direction', 'available', 'procedure', 'interface', 'framework', 'prototype', 'attribute', 'animation', 'dimension', 'construct', 'statement', 'calculate', 'integrate', 'implement', 'reference', 'subscribe', 'algorithm', 'function', 'variable', 'constant', 'database', 'security', 'hardware', 'software', 'resource', 'strategy', 'instance', 'argument', 'parameter', 'property', 'document', 'keyboard', 'absolute', 'relative', 'position', 'flexible', 'vertical', 'horizontal', 'gradient', 'transition', 'background', 'overflow', 'invisible', 'component', 'container', 'navigation', 'selection', 'extension', 'exception', 'validation', 'connection', 'execution', 'definition', 'generation', 'collection', 'management', 'investment', 'environment', 'performance', 'development', 'application', 'organization', 'relationship', 'communicate'];
+
+        let currentSentence = '', currentIndex = 0, gameStarted = false;
+        let sentenceCompleted = false, hasError = false;
+        let initialTime = 30.00, timeRemaining = 30.00, timerInterval = null, totalScore = 0, roundStartTime = 0;
+        let roundsCompleted = 0, oneForOneLevel = 0, doubleActive = false, doubleBoughtThisShop = false;
+
+        function generateRandomSentence() { 
+            let n = [...normalWords].sort(() => 0.5 - Math.random()).slice(0, 8);
+            let e = [...easyWords].sort(() => 0.5 - Math.random()).slice(0, 2);
+            let wordsArr = [...n, ...e];
+            if (oneForOneLevel > 0) {
+                let replaceCount = oneForOneLevel * 2;
+                wordsArr.splice(0, replaceCount);
+                const h = [...hardWords].sort(() => 0.5 - Math.random()).slice(0, replaceCount);
+                wordsArr.push(...h);
+            }
+            return wordsArr.sort(() => Math.random() - 0.5).join(' ') + '.'; 
+        }
+
+        function updateTimer() {
+            document.getElementById('timer').textContent = timeRemaining.toFixed(2);
+            document.getElementById('timer').className = 'timer' + (timeRemaining <= 5 ? ' danger' : timeRemaining <= 10 ? ' warning' : '');
+        }
+
+        function startTimer() {
+            roundStartTime = Date.now();
+            timerInterval = setInterval(() => {
+                timeRemaining -= 0.01;
+                if (timeRemaining <= 0) { timeRemaining = 0; clearInterval(timerInterval); gameOver(); }
+                updateTimer();
+            }, 10);
+        }
+
+        function gameOver() {
+            document.getElementById('finalScoreValue').textContent = totalScore;
+            document.getElementById('loseScreen').classList.add('active');
+            setTimeout(() => { location.reload(); }, 4000);
+        }
+
+        function displaySentence(sentence) {
+            const el = document.getElementById('sentence');
+            el.innerHTML = '';
+            for (let char of sentence) {
+                const span = document.createElement('span');
+                span.textContent = char;
+                el.appendChild(span);
+            }
+        }
+
+        function updateDisplay() {
+            const spans = document.getElementById('sentence').querySelectorAll('span');
+            spans.forEach((span, index) => {
+                span.className = '';
+                if (index < currentIndex) span.classList.add('correct');
+                else if (index === currentIndex) span.classList.add(hasError ? 'error' : 'current');
+            });
+        }
+
+        function toggleVisualKey(keyName, isPressed) {
+            const keys = document.querySelectorAll('.key');
+            keys.forEach(k => {
+                const isMatch = k.textContent.toLowerCase() === keyName.toLowerCase() || k.getAttribute('data-key') === keyName;
+                if (isMatch) {
+                    if (isPressed) k.classList.add('pressed');
+                    else k.classList.remove('pressed');
+                }
+            });
+        }
+
+        function handleInput(char) {
+            if (!document.getElementById('gameScreen').classList.contains('active')) return;
+            if (!gameStarted) {
+                if (char === ' ') return;
+                document.querySelector('.type-prompt').classList.add('hidden');
+                document.getElementById('phoneFrame').classList.add('game-active');
+                document.getElementById('phoneFrame').classList.remove('game-starting');
+                gameStarted = true;
+                startTimer();
+            }
+            if (hasError) return;
+            if (currentIndex < currentSentence.length) {
+                if (char.toLowerCase() === currentSentence[currentIndex].toLowerCase()) {
+                    currentIndex++;
+                    updateDisplay();
+                    if (currentIndex === currentSentence.length) sentenceCompleted = true;
+                } else { 
+                    hasError = true; 
+                    updateDisplay(); 
+                }
+            }
+        }
+
+        function handleDelete() { if (hasError) { hasError = false; updateDisplay(); } }
+
+        function handleEnter() {
+            if (sentenceCompleted && !document.getElementById('winScreen').classList.contains('active')) {
+                clearInterval(timerInterval);
+                sentenceCompleted = false; 
+                roundsCompleted++;
+                const timeTakenSeconds = (Date.now() - roundStartTime) / 1000;
+                const roundWpm = Math.round((currentSentence.length / 5) / (timeTakenSeconds / 60));
+                document.getElementById('winWpmDisplay').textContent = `${roundWpm} WPM`;
+                let letterCount = [...currentSentence].filter(c => c !== ' ' && c !== '.').length;
+                let roundScore = Math.round(letterCount * timeRemaining);
+                
+                if (doubleActive) {
+                    roundScore *= 2;
+                    doubleActive = false; 
+                    document.getElementById('doubleIndicator').style.visibility = 'hidden';
+                }
+
+                totalScore += roundScore;
+                document.getElementById('formulaDisplay').textContent = `${letterCount} × ${timeRemaining.toFixed(2)}`;
+                document.getElementById('resultScore').textContent = roundScore;
+                document.getElementById('winScreen').classList.add('active');
+            }
+        }
+
+        function startNewRound() {
+            initialTime = Math.max(5.00, initialTime - 0.50);
+            currentIndex = 0; sentenceCompleted = false; hasError = false;
+            timeRemaining = initialTime + (oneForOneLevel * 2.5);
+            gameStarted = false;
+            currentSentence = generateRandomSentence();
+            displaySentence(currentSentence);
+            updateDisplay(); updateTimer();
+            document.querySelector('.type-prompt').classList.remove('hidden');
+            document.getElementById('phoneFrame').classList.remove('game-active');
+            document.getElementById('phoneFrame').classList.add('game-starting');
+        }
+
+        function updateShopUI() {
+            document.getElementById('shopPoints').textContent = `Pts: ${totalScore}`;
+            const b1 = document.getElementById('buy1for1');
+            const bD = document.getElementById('buyDouble');
+            
+            b1.disabled = (totalScore < 750 || oneForOneLevel >= 5);
+            if (oneForOneLevel >= 5) { 
+                b1.textContent = "MAXED"; 
+                b1.classList.add('owned'); 
+            } else {
+                b1.textContent = `Buy (${oneForOneLevel}/5)`;
+            }
+
+            bD.disabled = (totalScore < 500 || doubleBoughtThisShop);
+            if (doubleBoughtThisShop) {
+                bD.textContent = "BOUGHT";
+                bD.classList.add('owned');
+            } else {
+                bD.textContent = "Buy";
+                bD.classList.remove('owned');
+            }
+        }
+
+        document.getElementById('buy1for1').onclick = () => {
+            if (totalScore >= 750 && oneForOneLevel < 5) {
+                totalScore -= 750; 
+                oneForOneLevel++;
+                updateShopUI();
+            }
+        };
+
+        document.getElementById('buyDouble').onclick = () => {
+            if (totalScore >= 500 && !doubleBoughtThisShop) {
+                totalScore -= 500; 
+                doubleActive = true;
+                doubleBoughtThisShop = true; 
+                document.getElementById('doubleIndicator').style.visibility = 'visible';
+                updateShopUI();
+            }
+        };
+
+        document.getElementById('playButton').addEventListener('click', () => {
+            document.getElementById('phoneFrame').classList.add('game-starting');
+            setTimeout(() => {
+                document.getElementById('menuContent').classList.add('hidden');
+                currentSentence = generateRandomSentence();
+                displaySentence(currentSentence);
+                updateDisplay();
+                document.getElementById('gameScreen').classList.add('active');
+            }, 800);
+        });
+
+        document.getElementById('nextButton').addEventListener('click', () => {
+            document.getElementById('winScreen').classList.remove('active');
+            if (roundsCompleted % 5 === 0) {
+                doubleBoughtThisShop = false; 
+                updateShopUI();
+                document.getElementById('shopScreen').classList.add('active');
+            } else {
+                startNewRound();
+            }
+        });
+
+        document.getElementById('shopNextButton').addEventListener('click', () => {
+            document.getElementById('shopScreen').classList.remove('active');
+            startNewRound();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return; 
+
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (!document.getElementById('menuContent').classList.contains('hidden')) { document.getElementById('playButton').click(); return; }
+                if (document.getElementById('winScreen').classList.contains('active')) { document.getElementById('nextButton').click(); return; }
+                if (document.getElementById('shopScreen').classList.contains('active')) { document.getElementById('shopNextButton').click(); return; }
+            }
+            
+            toggleVisualKey(e.key, true);
+
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                const winActive = document.getElementById('winScreen').classList.contains('active');
+                const shopActive = document.getElementById('shopScreen').classList.contains('active');
+                const menuActive = !document.getElementById('menuContent').classList.contains('hidden');
+
+                if (winActive) {
+                    document.getElementById('nextButton').click();
+                } else if (shopActive) {
+                    document.getElementById('shopNextButton').click();
+                } else if (menuActive) {
+                    document.getElementById('playButton').click();
+                } else {
+                    handleEnter(); 
+                }
+            }
+            else if (e.key === 'Backspace') { e.preventDefault(); handleDelete(); }
+            else if (e.key.length === 1) { handleInput(e.key); }
+        });
+
+        document.addEventListener('keyup', (e) => toggleVisualKey(e.key, false));
+    </script>
+</body>
+</html>
