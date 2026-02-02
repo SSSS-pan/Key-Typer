@@ -90,16 +90,17 @@
         .special-key { background: #b89bdb; box-shadow: 0 4px 0 #9878bb; width: 60px; }
         .enter-key { background: #97e05f; box-shadow: 0 4px 0 #77c03f; width: 60px; }
 
-        .win-screen, .lose-screen, .shop-screen {
+        .win-screen, .lose-screen, .shop-screen, .login-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: white; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; z-index: 100; border-radius: 30px;
         }
-        .win-screen.active, .lose-screen.active, .shop-screen.active { opacity: 1; pointer-events: auto; }
+        .win-screen.active, .lose-screen.active, .shop-screen.active, .login-screen.active { opacity: 1; pointer-events: auto; }
         .result-score { font-size: 80px; color: #97e05f; font-weight: 700; }
         .formula-display { font-size: 36px; color: #97e05f; margin-bottom: 20px; }
 
+        /* SHOP UI */
         .shop-header {
             position: absolute; top: 30px; left: 40px; right: 40px;
             display: flex; justify-content: space-between; align-items: center;
@@ -111,17 +112,18 @@
             border: 3px solid #ffcc00;
         }
         .shop-content {
-            width: 100%; max-width: 800px; height: 320px;
-            margin-top: 60px; overflow-y: auto; padding: 20px;
+            width: 100%; max-width: 850px; height: 350px;
+            margin-top: 60px; padding: 20px;
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
         }
         .shop-item {
             background: #f9f9f9; border: 2px solid #9878bb; border-radius: 15px;
-            padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+            padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
         }
         .buy-btn {
-            background: #97e05f; border: none; color: white; padding: 8px 15px;
+            background: #97e05f; border: none; color: white; padding: 10px 20px;
             border-radius: 10px; font-weight: 700; cursor: pointer;
+            margin-top: auto; width: 100%;
         }
         .buy-btn:disabled { background: #ccc; cursor: not-allowed; }
         .buy-btn.owned { background: #b89bdb; }
@@ -131,18 +133,69 @@
             width: 100px !important; height: 45px !important; font-size: 18px !important;
             box-shadow: none !important; border-radius: 10px !important;
         }
+        
+        /* QUIT BUTTON MOVED TO TOP RIGHT */
+        .quit-btn {
+            position: absolute; top: 30px; right: 40px;
+            width: 80px; height: 40px; background: #f77373;
+            border: none; border-radius: 10px; color: white;
+            font-weight: 700; cursor: pointer; z-index: 50;
+        }
+
+        /* LOGIN SCREEN STYLES */
+        .login-form {
+            background: #f8f9fa; padding: 40px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 400px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .login-input {
+            padding: 15px; border-radius: 10px; border: 2px solid #ddd;
+            font-size: 18px; font-family: 'Prompt', sans-serif;
+        }
+        .login-btn {
+            background: #97e05f; border: none; color: white; padding: 15px;
+            border-radius: 10px; font-size: 20px; font-weight: 700; cursor: pointer;
+        }
+        .error-msg { color: #f77373; font-weight: 600; min-height: 24px; text-align: center;}
+
+        /* LOGOUT BUTTON */
+        .logout-btn {
+            position: absolute; top: 20px; right: 20px; 
+            background: none; border: 1px solid #ccc; color: #888;
+            padding: 5px 10px; border-radius: 5px; cursor: pointer;
+            font-size: 12px;
+        }
+        .logout-btn:hover { background: #f0f0f0; }
     </style>
 </head>
 <body>
     <div class="phone-frame" id="phoneFrame">
-        <div class="menu-content" id="menuContent">
+        
+        <div class="login-screen active" id="loginScreen">
+            <div class="logo" style="margin-bottom:20px;">
+                <div class="logo-text" style="font-size:56px;">
+                    <span class="logo-key">Key</span><span class="logo-typer">Typer</span>
+                </div>
+            </div>
+            <div class="login-form">
+                <div style="text-align:center; color:#888;">Login or Register</div>
+                <input type="text" id="usernameInput" class="login-input" placeholder="Username">
+                <input type="password" id="passwordInput" class="login-input" placeholder="Password">
+                <div class="error-msg" id="loginError"></div>
+                <button class="login-btn" id="loginBtn">Start Game</button>
+            </div>
+        </div>
+
+        <div class="menu-content hidden" id="menuContent">
+            <button class="logout-btn" id="logoutBtn">Logout</button>
             <div class="logo">
                 <div class="logo-text">
                     <span class="logo-key">Key</span><span class="logo-typer">Type</span><span class="logo-typer-r">r</span>
                 </div>
             </div>
             <div class="bottom-section">
-                <div class="highest-point" id="menuHighScoreDisplay" style="margin-bottom: 10px; color: #888;">Highest Point: 0</div>
+                <div style="font-size:24px; color:#9878bb; font-weight:700; margin-bottom:10px;">User: <span id="displayUsername">Guest</span></div>
+                <div class="highest-point" id="menuHighScoreDisplay" style="margin-bottom: 20px; color: #888;">Highest Point: 0</div>
                 <button class="play-button" id="playButton">PLAY</button>
             </div>
         </div>
@@ -152,6 +205,9 @@
             <div class="timer" id="timer">30.00</div>
             <div class="sentence-display" id="sentence"></div>
             <div class="type-prompt">Type to start</div>
+            
+            <button class="quit-btn" id="quitButton">Quit</button>
+
             <div class="keyboard" id="mainKeyboard">
                 <div class="keyboard-row">
                     <button class="key">Q</button><button class="key">W</button><button class="key">E</button><button class="key">R</button><button class="key">T</button>
@@ -177,6 +233,7 @@
         <div class="win-screen" id="winScreen">
             <div class="formula-display" id="formulaDisplay"></div>
             <div class="result-score" id="resultScore">0</div>
+            <div style="color:#888; margin-top:5px; font-weight:600;">High Score: <span id="roundHighScore">0</span></div>
             <button class="play-button" id="nextButton" style="width:250px; margin-top:20px;">Next</button>
             <div class="wpm-text" id="winWpmDisplay" style="margin-top:10px;">0 WPM</div>
         </div>
@@ -188,16 +245,24 @@
             </div>
             <div class="shop-content">
                 <div class="shop-item">
-                    <div style="font-weight:800; color:#9878bb;">1 for 1</div>
-                    <div style="font-size:12px; color:#666;">+2 Hard words/lvl. +2.5s starting time/lvl. (Max 5)</div>
-                    <div style="font-weight:700; color:#ffb300;">750 Pts</div>
-                    <button class="buy-btn" id="buy1for1">Buy (0/5)</button>
+                    <div>
+                        <div style="font-weight:800; color:#9878bb;">1 for 1</div>
+                        <div style="font-size:12px; color:#666; margin-top:5px;">+2 Hard words/lvl. +2.5s starting time/lvl.</div>
+                    </div>
+                    <div>
+                        <div style="font-weight:700; color:#ffb300; margin-bottom:5px;">750 Pts</div>
+                        <button class="buy-btn" id="buy1for1">Buy (0/5)</button>
+                    </div>
                 </div>
                 <div class="shop-item">
-                    <div style="font-weight:800; color:#9878bb;">Double or Nothing</div>
-                    <div style="font-size:12px; color:#666;">The next sentence gives 2x points!</div>
-                    <div style="font-weight:700; color:#ffb300;">500 Pts</div>
-                    <button class="buy-btn" id="buyDouble">Buy</button>
+                    <div>
+                        <div style="font-weight:800; color:#9878bb;">Double Up</div>
+                        <div style="font-size:12px; color:#666; margin-top:5px;">The next sentence gives 2x points!</div>
+                    </div>
+                    <div>
+                        <div style="font-weight:700; color:#ffb300; margin-bottom:5px;">500 Pts</div>
+                        <button class="buy-btn" id="buyDouble">Buy</button>
+                    </div>
                 </div>
                 <div class="shop-item" style="border: 2px dashed #ccc; background: none; justify-content: center; color:#ccc;">Coming Soon</div>
             </div>
@@ -207,6 +272,7 @@
         <div class="lose-screen" id="loseScreen">
             <div style="font-size:72px; color:#f77373; font-weight:800;">LOSE</div>
             <div id="finalScoreValue" style="font-size:56px; color:#97e05f;">0</div>
+            <div style="color:#888; margin-top:10px;">Returning to Menu...</div>
         </div>
     </div>
 
@@ -219,6 +285,120 @@
         let sentenceCompleted = false, hasError = false;
         let initialTime = 30.00, timeRemaining = 30.00, timerInterval = null, totalScore = 0, roundStartTime = 0;
         let roundsCompleted = 0, oneForOneLevel = 0, doubleActive = false, doubleBoughtThisShop = false;
+        
+        let currentUser = null;
+        let userHighScore = 0;
+
+        // --- SESSION AND LOGIN ---
+
+        window.onload = function() {
+            const lastUser = localStorage.getItem('keytyper_session');
+            if (lastUser) {
+                const userData = JSON.parse(localStorage.getItem(`keytyper_user_${lastUser}`));
+                if (userData) loginSuccess(lastUser, userData.highScore);
+            }
+        };
+
+        function handleLogin() {
+            const user = document.getElementById('usernameInput').value.trim();
+            const pass = document.getElementById('passwordInput').value.trim();
+            const err = document.getElementById('loginError');
+
+            if (!user || !pass) { err.textContent = "Please enter username and password"; return; }
+
+            const storageKey = `keytyper_user_${user}`;
+            const storedData = localStorage.getItem(storageKey);
+
+            if (storedData) {
+                const userData = JSON.parse(storedData);
+                if (userData.password === pass) {
+                    localStorage.setItem('keytyper_session', user);
+                    loginSuccess(user, userData.highScore);
+                } else {
+                    err.textContent = "Incorrect password";
+                }
+            } else {
+                const newUser = { password: pass, highScore: 0 };
+                localStorage.setItem(storageKey, JSON.stringify(newUser));
+                localStorage.setItem('keytyper_session', user);
+                loginSuccess(user, 0);
+            }
+        }
+
+        function loginSuccess(username, highScore) {
+            currentUser = username;
+            userHighScore = highScore;
+            document.getElementById('displayUsername').textContent = currentUser;
+            document.getElementById('menuHighScoreDisplay').textContent = `Highest Point: ${userHighScore}`;
+            document.getElementById('playButton').textContent = "PLAY";
+            document.getElementById('loginScreen').classList.remove('active');
+            document.getElementById('menuContent').classList.remove('hidden');
+        }
+
+        document.getElementById('logoutBtn').onclick = () => {
+            localStorage.removeItem('keytyper_session');
+            location.reload();
+        };
+
+        function saveHighScore(score) {
+            if (score > userHighScore) {
+                userHighScore = score;
+                const storageKey = `keytyper_user_${currentUser}`;
+                const storedData = JSON.parse(localStorage.getItem(storageKey));
+                storedData.highScore = userHighScore;
+                localStorage.setItem(storageKey, JSON.stringify(storedData));
+                document.getElementById('menuHighScoreDisplay').textContent = `Highest Point: ${userHighScore}`;
+            }
+            document.getElementById('roundHighScore').textContent = userHighScore;
+        }
+
+        // --- MENU LOGIC ---
+        document.getElementById('playButton').addEventListener('click', () => {
+            document.getElementById('phoneFrame').classList.add('game-starting');
+            setTimeout(() => {
+                document.getElementById('menuContent').classList.add('hidden');
+                currentSentence = generateRandomSentence();
+                displaySentence(currentSentence);
+                updateDisplay();
+                document.getElementById('gameScreen').classList.add('active');
+            }, 800);
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', handleLogin);
+
+        // --- GAME LOGIC ---
+
+        function resetGame() {
+            totalScore = 0;
+            roundsCompleted = 0;
+            oneForOneLevel = 0;
+            initialTime = 30.00;
+            doubleActive = false;
+            doubleBoughtThisShop = false;
+            document.getElementById('doubleIndicator').style.visibility = 'hidden';
+            updateShopUI();
+        }
+
+        // UPDATED QUIT BUTTON LOGIC
+        document.getElementById('quitButton').onclick = () => {
+            clearInterval(timerInterval); // Stop the timer
+            gameOver(); // Trigger result calculation and end game sequence
+        };
+
+        function gameOver() {
+            saveHighScore(totalScore);
+            document.getElementById('finalScoreValue').textContent = totalScore;
+            document.getElementById('loseScreen').classList.add('active');
+            
+            setTimeout(() => {
+                document.getElementById('loseScreen').classList.remove('active');
+                document.getElementById('gameScreen').classList.remove('active');
+                document.getElementById('menuContent').classList.remove('hidden');
+                document.getElementById('phoneFrame').classList.remove('game-active');
+                document.getElementById('phoneFrame').classList.remove('game-starting');
+                resetGame();
+            }, 3000);
+        }
 
         function generateRandomSentence() { 
             let n = [...normalWords].sort(() => 0.5 - Math.random()).slice(0, 8);
@@ -245,12 +425,6 @@
                 if (timeRemaining <= 0) { timeRemaining = 0; clearInterval(timerInterval); gameOver(); }
                 updateTimer();
             }, 10);
-        }
-
-        function gameOver() {
-            document.getElementById('finalScoreValue').textContent = totalScore;
-            document.getElementById('loseScreen').classList.add('active');
-            setTimeout(() => { location.reload(); }, 4000);
         }
 
         function displaySentence(sentence) {
@@ -326,6 +500,8 @@
                 }
 
                 totalScore += roundScore;
+                saveHighScore(totalScore);
+
                 document.getElementById('formulaDisplay').textContent = `${letterCount} × ${timeRemaining.toFixed(2)}`;
                 document.getElementById('resultScore').textContent = roundScore;
                 document.getElementById('winScreen').classList.add('active');
@@ -351,29 +527,16 @@
             const bD = document.getElementById('buyDouble');
             
             b1.disabled = (totalScore < 750 || oneForOneLevel >= 5);
-            if (oneForOneLevel >= 5) { 
-                b1.textContent = "MAXED"; 
-                b1.classList.add('owned'); 
-            } else {
-                b1.textContent = `Buy (${oneForOneLevel}/5)`;
-            }
+            if (oneForOneLevel >= 5) { b1.textContent = "MAXED"; b1.classList.add('owned'); } 
+            else { b1.textContent = `Buy (${oneForOneLevel}/5)`; b1.classList.remove('owned'); }
 
             bD.disabled = (totalScore < 500 || doubleBoughtThisShop);
-            if (doubleBoughtThisShop) {
-                bD.textContent = "BOUGHT";
-                bD.classList.add('owned');
-            } else {
-                bD.textContent = "Buy";
-                bD.classList.remove('owned');
-            }
+            if (doubleBoughtThisShop) { bD.textContent = "BOUGHT"; bD.classList.add('owned'); } 
+            else { bD.textContent = "Buy"; bD.classList.remove('owned'); }
         }
 
         document.getElementById('buy1for1').onclick = () => {
-            if (totalScore >= 750 && oneForOneLevel < 5) {
-                totalScore -= 750; 
-                oneForOneLevel++;
-                updateShopUI();
-            }
+            if (totalScore >= 750 && oneForOneLevel < 5) { totalScore -= 750; oneForOneLevel++; updateShopUI(); }
         };
 
         document.getElementById('buyDouble').onclick = () => {
@@ -386,26 +549,10 @@
             }
         };
 
-        document.getElementById('playButton').addEventListener('click', () => {
-            document.getElementById('phoneFrame').classList.add('game-starting');
-            setTimeout(() => {
-                document.getElementById('menuContent').classList.add('hidden');
-                currentSentence = generateRandomSentence();
-                displaySentence(currentSentence);
-                updateDisplay();
-                document.getElementById('gameScreen').classList.add('active');
-            }, 800);
-        });
-
         document.getElementById('nextButton').addEventListener('click', () => {
             document.getElementById('winScreen').classList.remove('active');
-            if (roundsCompleted % 5 === 0) {
-                doubleBoughtThisShop = false; 
-                updateShopUI();
-                document.getElementById('shopScreen').classList.add('active');
-            } else {
-                startNewRound();
-            }
+            if (roundsCompleted % 5 === 0) { doubleBoughtThisShop = false; updateShopUI(); document.getElementById('shopScreen').classList.add('active'); } 
+            else { startNewRound(); }
         });
 
         document.getElementById('shopNextButton').addEventListener('click', () => {
@@ -417,6 +564,7 @@
             if (e.repeat) return; 
 
             if (e.key === ' ') {
+                if (document.activeElement.tagName === 'INPUT') return;
                 e.preventDefault();
                 if (!document.getElementById('menuContent').classList.contains('hidden')) { document.getElementById('playButton').click(); return; }
                 if (document.getElementById('winScreen').classList.contains('active')) { document.getElementById('nextButton').click(); return; }
@@ -427,22 +575,21 @@
 
             if (e.key === 'Enter') { 
                 e.preventDefault(); 
-                const winActive = document.getElementById('winScreen').classList.contains('active');
-                const shopActive = document.getElementById('shopScreen').classList.contains('active');
-                const menuActive = !document.getElementById('menuContent').classList.contains('hidden');
-
-                if (winActive) {
-                    document.getElementById('nextButton').click();
-                } else if (shopActive) {
-                    document.getElementById('shopNextButton').click();
-                } else if (menuActive) {
-                    document.getElementById('playButton').click();
-                } else {
-                    handleEnter(); 
+                if (document.getElementById('loginScreen').classList.contains('active')) { handleLogin(); }
+                else if (document.getElementById('winScreen').classList.contains('active')) { document.getElementById('nextButton').click(); } 
+                else if (document.getElementById('shopScreen').classList.contains('active')) { document.getElementById('shopNextButton').click(); } 
+                else if (!document.getElementById('menuContent').classList.contains('hidden')) { document.getElementById('playButton').click(); } 
+                else { handleEnter(); }
+            }
+            else if (e.key === 'Backspace') { 
+                if (document.activeElement.tagName === 'INPUT') return;
+                e.preventDefault(); handleDelete(); 
+            }
+            else if (e.key.length === 1) { 
+                if (!document.getElementById('loginScreen').classList.contains('active') && document.activeElement.tagName !== 'INPUT') {
+                    handleInput(e.key); 
                 }
             }
-            else if (e.key === 'Backspace') { e.preventDefault(); handleDelete(); }
-            else if (e.key.length === 1) { handleInput(e.key); }
         });
 
         document.addEventListener('keyup', (e) => toggleVisualKey(e.key, false));
