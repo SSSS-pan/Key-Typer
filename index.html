@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KeyTyper PC Edition</title>
+    <title>KeyTyper Online</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap');
 
@@ -90,13 +90,15 @@
         .special-key { background: #b89bdb; box-shadow: 0 4px 0 #9878bb; width: 60px; }
         .enter-key { background: #97e05f; box-shadow: 0 4px 0 #77c03f; width: 60px; }
 
-        .win-screen, .lose-screen, .shop-screen, .login-screen {
+        .win-screen, .lose-screen, .shop-screen, .login-screen, .leaderboard-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: white; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; z-index: 100; border-radius: 30px;
         }
-        .win-screen.active, .lose-screen.active, .shop-screen.active, .login-screen.active { opacity: 1; pointer-events: auto; }
+        .win-screen.active, .lose-screen.active, .shop-screen.active, .login-screen.active, .leaderboard-screen.active { 
+            opacity: 1; pointer-events: auto; 
+        }
         .result-score { font-size: 80px; color: #97e05f; font-weight: 700; }
         .formula-display { font-size: 36px; color: #97e05f; margin-bottom: 20px; }
 
@@ -134,7 +136,7 @@
             box-shadow: none !important; border-radius: 10px !important;
         }
         
-        /* QUIT BUTTON MOVED TO TOP RIGHT */
+        /* QUIT BUTTON */
         .quit-btn {
             position: absolute; top: 30px; right: 40px;
             width: 80px; height: 40px; background: #f77373;
@@ -166,11 +168,68 @@
             font-size: 12px;
         }
         .logout-btn:hover { background: #f0f0f0; }
+
+        /* LEADERBOARD ARROW */
+        .lb-arrow {
+            position: absolute; left: 30px; top: 50%; transform: translateY(-50%);
+            width: 60px; height: 100px; background: #9878bb;
+            clip-path: polygon(100% 0, 0 50%, 100% 100%);
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .lb-arrow:hover { transform: translateY(-50%) scale(1.1); }
+        .lb-arrow-back {
+            position: absolute; right: 30px; top: 50%; transform: translateY(-50%) rotate(180deg);
+            width: 60px; height: 100px; background: #9878bb;
+            clip-path: polygon(100% 0, 0 50%, 100% 100%);
+            cursor: pointer;
+        }
+
+        /* LEADERBOARD UI */
+        .leaderboard-screen { background: #f8f9fa; }
+        .lb-container { width: 80%; height: 80%; display: flex; flex-direction: column; }
+        .lb-tabs { display: flex; gap: 20px; margin-bottom: 20px; }
+        .lb-tab { 
+            padding: 10px 30px; font-size: 24px; font-weight: 800; color: #ccc; cursor: pointer; 
+            border-bottom: 4px solid transparent; 
+        }
+        .lb-tab.active-tab { color: #9878bb; border-bottom: 4px solid #9878bb; }
+        
+        .lb-list { flex: 1; overflow-y: auto; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .lb-row { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; font-size: 20px; font-weight: 600; }
+        .lb-row:last-child { border-bottom: none; }
+        .lb-rank { width: 40px; color: #9878bb; }
+        .lb-name { flex: 1; text-align: left; }
+        .lb-score { color: #ffb300; }
+        
+        /* Friend Controls */
+        .friend-input-area { display: flex; gap: 10px; margin-bottom: 10px; }
+        .friend-input { padding: 10px; border-radius: 8px; border: 2px solid #ddd; flex: 1; font-family: 'Prompt'; }
+        .friend-add-btn { background: #97e05f; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .remove-friend-btn { color: #f77373; cursor: pointer; margin-left: 10px; font-weight: 800; }
     </style>
 </head>
 <body>
     <div class="phone-frame" id="phoneFrame">
         
+        <div class="leaderboard-screen" id="lbScreen">
+            <div class="lb-arrow-back" id="lbBackBtn"></div>
+            <div class="lb-container">
+                <div class="lb-tabs">
+                    <div class="lb-tab active-tab" id="tabGlobal">Global</div>
+                    <div class="lb-tab" id="tabFriends">Friends</div>
+                </div>
+                
+                <div class="friend-input-area hidden" id="friendControls">
+                    <input type="text" class="friend-input" id="friendNameInput" placeholder="Enter friend's username">
+                    <button class="friend-add-btn" id="addFriendBtn">Add</button>
+                </div>
+
+                <div class="lb-list" id="lbList">
+                    <div style="text-align:center; color:#888; margin-top:50px;">Loading...</div>
+                </div>
+            </div>
+        </div>
+
         <div class="login-screen active" id="loginScreen">
             <div class="logo" style="margin-bottom:20px;">
                 <div class="logo-text" style="font-size:56px;">
@@ -178,26 +237,22 @@
                 </div>
             </div>
             <div class="login-form">
-                <div style="text-align:center; color:#888;">Login or Register</div>
+                <div style="text-align:center; color:#888;">Online Login</div>
                 <input type="text" id="usernameInput" class="login-input" placeholder="Username">
                 <input type="password" id="passwordInput" class="login-input" placeholder="Password">
                 <div class="error-msg" id="loginError"></div>
-                <button class="login-btn" id="loginBtn">Start Game</button>
+                <button class="login-btn" id="loginBtn">Connect & Play</button>
             </div>
         </div>
 
         <div class="menu-content hidden" id="menuContent">
-            <button class="logout-btn" id="logoutBtn">Logout</button>
-            <div class="logo">
-                <div class="logo-text">
-                    <span class="logo-key">Key</span><span class="logo-typer">Type</span><span class="logo-typer-r">r</span>
-                </div>
+            <div class="lb-arrow" id="lbOpenBtn"></div> <button class="logout-btn" id="logoutBtn">Logout</button>
+            <div class="logo-text">
+                <span class="logo-key">Key</span><span class="logo-typer">Type</span><span class="logo-typer-r">r</span>
             </div>
-            <div class="bottom-section">
-                <div style="font-size:24px; color:#9878bb; font-weight:700; margin-bottom:10px;">User: <span id="displayUsername">Guest</span></div>
-                <div class="highest-point" id="menuHighScoreDisplay" style="margin-bottom: 20px; color: #888;">Highest Point: 0</div>
-                <button class="play-button" id="playButton">PLAY</button>
-            </div>
+            <div style="font-size:24px; color:#9878bb; font-weight:700; margin-bottom:10px;">User: <span id="displayUsername">...</span></div>
+            <div class="highest-point" id="menuHighScoreDisplay" style="margin-bottom: 20px; color: #888;">Highest Point: 0</div>
+            <button class="play-button" id="playButton">PLAY</button>
         </div>
 
         <div class="game-screen" id="gameScreen">
@@ -205,9 +260,7 @@
             <div class="timer" id="timer">30.00</div>
             <div class="sentence-display" id="sentence"></div>
             <div class="type-prompt">Type to start</div>
-            
             <button class="quit-btn" id="quitButton">Quit</button>
-
             <div class="keyboard" id="mainKeyboard">
                 <div class="keyboard-row">
                     <button class="key">Q</button><button class="key">W</button><button class="key">E</button><button class="key">R</button><button class="key">T</button>
@@ -235,7 +288,7 @@
             <div class="result-score" id="resultScore">0</div>
             <div style="color:#888; margin-top:5px; font-weight:600;">High Score: <span id="roundHighScore">0</span></div>
             <button class="play-button" id="nextButton" style="width:250px; margin-top:20px;">Next</button>
-            <div class="wpm-text" id="winWpmDisplay" style="margin-top:10px;">0 WPM</div>
+            <div id="winWpmDisplay" style="margin-top:10px;">0 WPM</div>
         </div>
 
         <div class="shop-screen" id="shopScreen">
@@ -276,97 +329,227 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyBfo2Zf-XPPjp-9hoLLKoQ2tHisKjR6TWI",
+            authDomain: "key-typer.firebaseapp.com",
+            projectId: "key-typer",
+            storageBucket: "key-typer.firebasestorage.app",
+            messagingSenderId: "474750159667",
+            appId: "1:474750159667:web:d174ea6f9bd126d6444c46",
+            measurementId: "G-1QMZKTQHGB"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // GAME STATE
+        let currentUserData = null;
+        let currentUserId = null;
+        
+        // WORD LISTS
         const easyWords = ['the', 'cat', 'dog', 'sun', 'run', 'big', 'red', 'blue', 'map', 'hat', 'cup', 'sky', 'box', 'pen', 'fox', 'toy', 'ice', 'fire', 'hot', 'cold', 'wet', 'dry', 'old', 'new', 'fast', 'slow', 'up', 'down', 'left', 'book', 'tree', 'bird', 'fish', 'milk', 'cake', 'jump', 'sing', 'walk', 'duck', 'rain', 'snow', 'wind', 'star', 'moon', 'ship', 'car', 'bus', 'road', 'hill', 'leaf'];
         const normalWords = ['bright', 'slowly', 'above', 'ocean', 'jumps', 'quick', 'brown', 'happy', 'garden', 'gentle', 'breeze', 'through', 'morning', 'spring', 'season', 'purple', 'clouds', 'around', 'simple', 'friend', 'school', 'yellow', 'window', 'orange', 'planet', 'rocket', 'castle', 'dragon', 'knight', 'forest', 'bridge', 'island', 'summer', 'winter', 'autumn', 'coffee', 'player', 'camera', 'guitar', 'laptop', 'system', 'button', 'market', 'silver', 'bottle', 'pencil', 'active', 'silent', 'energy', 'nature', 'animal', 'desert', 'palace', 'speech', 'valley', 'stream', 'shadow', 'mirror', 'wonder', 'spirit', 'expert', 'action', 'flavor', 'impact', 'global', 'travel', 'motion', 'theory', 'future', 'modern', 'square', 'circle', 'danger', 'secure', 'health', 'wealth', 'honest', 'memory', 'choice', 'public', 'native', 'flight', 'ground', 'target', 'source', 'middle', 'object', 'strong', 'weight', 'unique', 'visual', 'report', 'design', 'update', 'search', 'create', 'launch', 'delete', 'select', 'finish', 'escape', 'screen', 'format', 'layout', 'header', 'footer', 'border', 'margin', 'column', 'random', 'number', 'string', 'script', 'method', 'event', 'result', 'status', 'canvas', 'local', 'enemy', 'score', 'level', 'bonus', 'power', 'speed', 'climb', 'attack', 'defend', 'magic', 'shield', 'sword', 'stone', 'water', 'flame', 'earth', 'light', 'dark', 'sound', 'music', 'voice', 'image', 'video', 'total', 'point'];
         const hardWords = ['moonlight', 'children', 'beautiful', 'everything', 'different', 'important', 'experience', 'technology', 'adventure', 'discovery', 'knowledge', 'celebrate', 'understand', 'challenge', 'impossible', 'happiness', 'structure', 'signature', 'community', 'determine', 'scientist', 'influence', 'passenger', 'necessary', 'effective', 'transform', 'excellent', 'character', 'introduce', 'immediate', 'situation', 'frequency', 'operation', 'highlight', 'recommend', 'direction', 'available', 'procedure', 'interface', 'framework', 'prototype', 'attribute', 'animation', 'dimension', 'construct', 'statement', 'calculate', 'integrate', 'implement', 'reference', 'subscribe', 'algorithm', 'function', 'variable', 'constant', 'database', 'security', 'hardware', 'software', 'resource', 'strategy', 'instance', 'argument', 'parameter', 'property', 'document', 'keyboard', 'absolute', 'relative', 'position', 'flexible', 'vertical', 'horizontal', 'gradient', 'transition', 'background', 'overflow', 'invisible', 'component', 'container', 'navigation', 'selection', 'extension', 'exception', 'validation', 'connection', 'execution', 'definition', 'generation', 'collection', 'management', 'investment', 'environment', 'performance', 'development', 'application', 'organization', 'relationship', 'communicate'];
 
+        // GAME VARIABLES
         let currentSentence = '', currentIndex = 0, gameStarted = false;
         let sentenceCompleted = false, hasError = false;
         let initialTime = 30.00, timeRemaining = 30.00, timerInterval = null, totalScore = 0, roundStartTime = 0;
         let roundsCompleted = 0, oneForOneLevel = 0, doubleActive = false, doubleBoughtThisShop = false;
-        
-        let currentUser = null;
-        let userHighScore = 0;
 
-        // --- SESSION AND LOGIN ---
-
-        window.onload = function() {
-            const lastUser = localStorage.getItem('keytyper_session');
-            if (lastUser) {
-                const userData = JSON.parse(localStorage.getItem(`keytyper_user_${lastUser}`));
-                if (userData) loginSuccess(lastUser, userData.highScore);
-            }
-        };
-
-        function handleLogin() {
+        // --- AUTH LOGIC ---
+        document.getElementById('loginBtn').onclick = async () => {
             const user = document.getElementById('usernameInput').value.trim();
             const pass = document.getElementById('passwordInput').value.trim();
             const err = document.getElementById('loginError');
+            if(!user || !pass) { err.textContent="Fill all fields"; return; }
+            
+            // Fake email for simplicity
+            const email = user + "@keytyper.game"; 
 
-            if (!user || !pass) { err.textContent = "Please enter username and password"; return; }
-
-            const storageKey = `keytyper_user_${user}`;
-            const storedData = localStorage.getItem(storageKey);
-
-            if (storedData) {
-                const userData = JSON.parse(storedData);
-                if (userData.password === pass) {
-                    localStorage.setItem('keytyper_session', user);
-                    loginSuccess(user, userData.highScore);
-                } else {
-                    err.textContent = "Incorrect password";
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (e) {
+                // If login fails, try register
+                try {
+                    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                    // Create User Doc
+                    await setDoc(doc(db, "users", cred.user.uid), {
+                        username: user,
+                        highScore: 0,
+                        friends: []
+                    });
+                } catch (e2) {
+                    err.textContent = "Error: " + e2.message;
                 }
-            } else {
-                const newUser = { password: pass, highScore: 0 };
-                localStorage.setItem(storageKey, JSON.stringify(newUser));
-                localStorage.setItem('keytyper_session', user);
-                loginSuccess(user, 0);
             }
-        }
-
-        function loginSuccess(username, highScore) {
-            currentUser = username;
-            userHighScore = highScore;
-            document.getElementById('displayUsername').textContent = currentUser;
-            document.getElementById('menuHighScoreDisplay').textContent = `Highest Point: ${userHighScore}`;
-            document.getElementById('playButton').textContent = "PLAY";
-            document.getElementById('loginScreen').classList.remove('active');
-            document.getElementById('menuContent').classList.remove('hidden');
-        }
-
-        document.getElementById('logoutBtn').onclick = () => {
-            localStorage.removeItem('keytyper_session');
-            location.reload();
         };
 
-        function saveHighScore(score) {
-            if (score > userHighScore) {
-                userHighScore = score;
-                const storageKey = `keytyper_user_${currentUser}`;
-                const storedData = JSON.parse(localStorage.getItem(storageKey));
-                storedData.highScore = userHighScore;
-                localStorage.setItem(storageKey, JSON.stringify(storedData));
-                document.getElementById('menuHighScoreDisplay').textContent = `Highest Point: ${userHighScore}`;
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                const snap = await getDoc(doc(db, "users", user.uid));
+                if (snap.exists()) {
+                    currentUserData = snap.data();
+                    document.getElementById('displayUsername').textContent = currentUserData.username;
+                    document.getElementById('menuHighScoreDisplay').textContent = "Highest Point: " + currentUserData.highScore;
+                    document.getElementById('loginScreen').classList.remove('active');
+                    document.getElementById('menuContent').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('loginScreen').classList.add('active');
+                document.getElementById('menuContent').classList.add('hidden');
             }
-            document.getElementById('roundHighScore').textContent = userHighScore;
+        });
+
+        document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+        // --- LEADERBOARD LOGIC ---
+        document.getElementById('lbOpenBtn').onclick = () => { 
+            document.getElementById('menuContent').classList.add('hidden');
+            document.getElementById('lbScreen').classList.add('active');
+            loadGlobalLB(); 
+        };
+        
+        document.getElementById('lbBackBtn').onclick = () => {
+            document.getElementById('lbScreen').classList.remove('active');
+            document.getElementById('menuContent').classList.remove('hidden');
+        };
+
+        document.getElementById('tabGlobal').onclick = () => {
+            document.getElementById('tabGlobal').classList.add('active-tab');
+            document.getElementById('tabFriends').classList.remove('active-tab');
+            document.getElementById('friendControls').classList.add('hidden');
+            loadGlobalLB();
+        };
+
+        document.getElementById('tabFriends').onclick = () => {
+            document.getElementById('tabFriends').classList.add('active-tab');
+            document.getElementById('tabGlobal').classList.remove('active-tab');
+            document.getElementById('friendControls').classList.remove('hidden');
+            loadFriendLB();
+        };
+
+        async function loadGlobalLB() {
+            const list = document.getElementById('lbList');
+            list.innerHTML = '<div style="text-align:center;color:#888;">Loading Global...</div>';
+            
+            const q = query(collection(db, "users"), orderBy("highScore", "desc"), limit(10));
+            const snapshot = await getDocs(q);
+            renderList(snapshot.docs);
         }
 
-        // --- MENU LOGIC ---
+        async function loadFriendLB() {
+            const list = document.getElementById('lbList');
+            list.innerHTML = '<div style="text-align:center;color:#888;">Loading Friends...</div>';
+
+            // Refresh user data to get latest friends list
+            const userSnap = await getDoc(doc(db, "users", currentUserId));
+            currentUserData = userSnap.data();
+            const friends = currentUserData.friends || [];
+
+            if (friends.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:#888;">No friends added yet.<br>Type a name above to add one!</div>';
+                return;
+            }
+
+            // Firestore "in" query allows max 10 items. For simplicity we assume < 10 friends or handle loosely
+            // To handle more, we'd need multiple queries. Keeping it simple:
+            const chunks = [];
+            let tempFriends = [...friends];
+            while(tempFriends.length) chunks.push(tempFriends.splice(0, 10)); // chunk array
+            
+            let allDocs = [];
+            for (let chunk of chunks) {
+                const q = query(collection(db, "users"), where("username", "in", chunk));
+                const snap = await getDocs(q);
+                allDocs = allDocs.concat(snap.docs);
+            }
+            
+            // Add self to friend list for comparison
+            allDocs.push(userSnap); 
+            
+            // Sort manually since "in" query doesn't sort
+            allDocs.sort((a,b) => b.data().highScore - a.data().highScore);
+            
+            // Remove duplicates (self might be in friend list by accident?)
+            const uniqueDocs = [...new Map(allDocs.map(item => [item.id, item])).values()];
+
+            renderList(uniqueDocs, true); // true = isFriendList
+        }
+
+        function renderList(docs, isFriendList = false) {
+            const list = document.getElementById('lbList');
+            list.innerHTML = '';
+            docs.forEach((d, index) => {
+                const data = d.data();
+                const div = document.createElement('div');
+                div.className = 'lb-row';
+                
+                let removeBtn = '';
+                // Only show remove button if it's the Friends tab AND NOT yourself
+                if (isFriendList && d.id !== currentUserId) {
+                    removeBtn = `<span class="remove-friend-btn" onclick="window.removeFriend('${data.username}')">(-)</span>`;
+                }
+
+                div.innerHTML = `
+                    <div class="lb-rank">#${index+1}</div>
+                    <div class="lb-name">${data.username} ${removeBtn}</div>
+                    <div class="lb-score">${data.highScore}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Add Friend Logic
+        document.getElementById('addFriendBtn').onclick = async () => {
+            const name = document.getElementById('friendNameInput').value.trim();
+            if (!name) return;
+            
+            // Check if user exists
+            const q = query(collection(db, "users"), where("username", "==", name));
+            const snap = await getDocs(q);
+            
+            if (snap.empty) {
+                alert("User not found!");
+            } else {
+                await updateDoc(doc(db, "users", currentUserId), {
+                    friends: arrayUnion(name)
+                });
+                document.getElementById('friendNameInput').value = '';
+                loadFriendLB(); // reload list
+            }
+        };
+
+        // Make removeFriend globally accessible for the HTML onclick
+        window.removeFriend = async (name) => {
+            if(confirm(`Remove ${name} from friends?`)) {
+                await updateDoc(doc(db, "users", currentUserId), {
+                    friends: arrayRemove(name)
+                });
+                loadFriendLB();
+            }
+        };
+
+        // --- GAME LOGIC ---
         document.getElementById('playButton').addEventListener('click', () => {
             document.getElementById('phoneFrame').classList.add('game-starting');
             setTimeout(() => {
                 document.getElementById('menuContent').classList.add('hidden');
+                resetGame();
                 currentSentence = generateRandomSentence();
                 displaySentence(currentSentence);
                 updateDisplay();
                 document.getElementById('gameScreen').classList.add('active');
             }, 800);
         });
-
-        document.getElementById('loginBtn').addEventListener('click', handleLogin);
-
-        // --- GAME LOGIC ---
 
         function resetGame() {
             totalScore = 0;
@@ -385,8 +568,16 @@
             gameOver(); // Trigger result calculation and end game sequence
         };
 
-        function gameOver() {
-            saveHighScore(totalScore);
+        async function gameOver() {
+            // Save high score to Firebase
+            if (totalScore > currentUserData.highScore) {
+                await updateDoc(doc(db, "users", currentUserId), { 
+                    highScore: totalScore 
+                });
+                currentUserData.highScore = totalScore;
+                document.getElementById('menuHighScoreDisplay').textContent = "Highest Point: " + totalScore;
+            }
+            
             document.getElementById('finalScoreValue').textContent = totalScore;
             document.getElementById('loseScreen').classList.add('active');
             
@@ -422,7 +613,11 @@
             roundStartTime = Date.now();
             timerInterval = setInterval(() => {
                 timeRemaining -= 0.01;
-                if (timeRemaining <= 0) { timeRemaining = 0; clearInterval(timerInterval); gameOver(); }
+                if (timeRemaining <= 0) { 
+                    timeRemaining = 0; 
+                    clearInterval(timerInterval); 
+                    gameOver(); 
+                }
                 updateTimer();
             }, 10);
         }
@@ -480,9 +675,14 @@
             }
         }
 
-        function handleDelete() { if (hasError) { hasError = false; updateDisplay(); } }
+        function handleDelete() { 
+            if (hasError) { 
+                hasError = false; 
+                updateDisplay(); 
+            } 
+        }
 
-        function handleEnter() {
+        async function handleEnter() {
             if (sentenceCompleted && !document.getElementById('winScreen').classList.contains('active')) {
                 clearInterval(timerInterval);
                 sentenceCompleted = false; 
@@ -500,22 +700,34 @@
                 }
 
                 totalScore += roundScore;
-                saveHighScore(totalScore);
+                
+                // Update high score in Firebase if needed
+                if (totalScore > currentUserData.highScore) {
+                    await updateDoc(doc(db, "users", currentUserId), { 
+                        highScore: totalScore 
+                    });
+                    currentUserData.highScore = totalScore;
+                    document.getElementById('menuHighScoreDisplay').textContent = "Highest Point: " + totalScore;
+                }
 
                 document.getElementById('formulaDisplay').textContent = `${letterCount} × ${timeRemaining.toFixed(2)}`;
                 document.getElementById('resultScore').textContent = roundScore;
+                document.getElementById('roundHighScore').textContent = currentUserData.highScore;
                 document.getElementById('winScreen').classList.add('active');
             }
         }
 
         function startNewRound() {
             initialTime = Math.max(5.00, initialTime - 0.50);
-            currentIndex = 0; sentenceCompleted = false; hasError = false;
+            currentIndex = 0; 
+            sentenceCompleted = false; 
+            hasError = false;
             timeRemaining = initialTime + (oneForOneLevel * 2.5);
             gameStarted = false;
             currentSentence = generateRandomSentence();
             displaySentence(currentSentence);
-            updateDisplay(); updateTimer();
+            updateDisplay(); 
+            updateTimer();
             document.querySelector('.type-prompt').classList.remove('hidden');
             document.getElementById('phoneFrame').classList.remove('game-active');
             document.getElementById('phoneFrame').classList.add('game-starting');
@@ -527,16 +739,30 @@
             const bD = document.getElementById('buyDouble');
             
             b1.disabled = (totalScore < 750 || oneForOneLevel >= 5);
-            if (oneForOneLevel >= 5) { b1.textContent = "MAXED"; b1.classList.add('owned'); } 
-            else { b1.textContent = `Buy (${oneForOneLevel}/5)`; b1.classList.remove('owned'); }
+            if (oneForOneLevel >= 5) { 
+                b1.textContent = "MAXED"; 
+                b1.classList.add('owned'); 
+            } else { 
+                b1.textContent = `Buy (${oneForOneLevel}/5)`; 
+                b1.classList.remove('owned'); 
+            }
 
             bD.disabled = (totalScore < 500 || doubleBoughtThisShop);
-            if (doubleBoughtThisShop) { bD.textContent = "BOUGHT"; bD.classList.add('owned'); } 
-            else { bD.textContent = "Buy"; bD.classList.remove('owned'); }
+            if (doubleBoughtThisShop) { 
+                bD.textContent = "BOUGHT"; 
+                bD.classList.add('owned'); 
+            } else { 
+                bD.textContent = "Buy"; 
+                bD.classList.remove('owned'); 
+            }
         }
 
         document.getElementById('buy1for1').onclick = () => {
-            if (totalScore >= 750 && oneForOneLevel < 5) { totalScore -= 750; oneForOneLevel++; updateShopUI(); }
+            if (totalScore >= 750 && oneForOneLevel < 5) { 
+                totalScore -= 750; 
+                oneForOneLevel++; 
+                updateShopUI(); 
+            }
         };
 
         document.getElementById('buyDouble').onclick = () => {
@@ -551,8 +777,13 @@
 
         document.getElementById('nextButton').addEventListener('click', () => {
             document.getElementById('winScreen').classList.remove('active');
-            if (roundsCompleted % 5 === 0) { doubleBoughtThisShop = false; updateShopUI(); document.getElementById('shopScreen').classList.add('active'); } 
-            else { startNewRound(); }
+            if (roundsCompleted % 5 === 0) { 
+                doubleBoughtThisShop = false; 
+                updateShopUI(); 
+                document.getElementById('shopScreen').classList.add('active'); 
+            } else { 
+                startNewRound(); 
+            }
         });
 
         document.getElementById('shopNextButton').addEventListener('click', () => {
@@ -566,24 +797,44 @@
             if (e.key === ' ') {
                 if (document.activeElement.tagName === 'INPUT') return;
                 e.preventDefault();
-                if (!document.getElementById('menuContent').classList.contains('hidden')) { document.getElementById('playButton').click(); return; }
-                if (document.getElementById('winScreen').classList.contains('active')) { document.getElementById('nextButton').click(); return; }
-                if (document.getElementById('shopScreen').classList.contains('active')) { document.getElementById('shopNextButton').click(); return; }
+                if (!document.getElementById('menuContent').classList.contains('hidden')) { 
+                    document.getElementById('playButton').click(); 
+                    return; 
+                }
+                if (document.getElementById('winScreen').classList.contains('active')) { 
+                    document.getElementById('nextButton').click(); 
+                    return; 
+                }
+                if (document.getElementById('shopScreen').classList.contains('active')) { 
+                    document.getElementById('shopNextButton').click(); 
+                    return; 
+                }
             }
             
             toggleVisualKey(e.key, true);
 
             if (e.key === 'Enter') { 
                 e.preventDefault(); 
-                if (document.getElementById('loginScreen').classList.contains('active')) { handleLogin(); }
-                else if (document.getElementById('winScreen').classList.contains('active')) { document.getElementById('nextButton').click(); } 
-                else if (document.getElementById('shopScreen').classList.contains('active')) { document.getElementById('shopNextButton').click(); } 
-                else if (!document.getElementById('menuContent').classList.contains('hidden')) { document.getElementById('playButton').click(); } 
-                else { handleEnter(); }
+                if (document.getElementById('loginScreen').classList.contains('active')) { 
+                    document.getElementById('loginBtn').click(); 
+                }
+                else if (document.getElementById('winScreen').classList.contains('active')) { 
+                    document.getElementById('nextButton').click(); 
+                } 
+                else if (document.getElementById('shopScreen').classList.contains('active')) { 
+                    document.getElementById('shopNextButton').click(); 
+                } 
+                else if (!document.getElementById('menuContent').classList.contains('hidden')) { 
+                    document.getElementById('playButton').click(); 
+                } 
+                else { 
+                    handleEnter(); 
+                }
             }
             else if (e.key === 'Backspace') { 
                 if (document.activeElement.tagName === 'INPUT') return;
-                e.preventDefault(); handleDelete(); 
+                e.preventDefault(); 
+                handleDelete(); 
             }
             else if (e.key.length === 1) { 
                 if (!document.getElementById('loginScreen').classList.contains('active') && document.activeElement.tagName !== 'INPUT') {
